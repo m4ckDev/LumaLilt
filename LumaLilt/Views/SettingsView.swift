@@ -8,6 +8,12 @@ struct SettingsView: View {
     @State private var confirmReset = false
     @State private var help = false
 
+    private var versionLabel: String {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "2"
+        return "\(version) (\(build))"
+    }
+
     var body: some View {
         Form {
             Section("Make it yours") {
@@ -23,11 +29,14 @@ struct SettingsView: View {
             }
             Section("About LumaLilt") {
                 Button("How to play") { help = true }
-                LabeledContent("Version", value: "1.0 (1)")
+                LabeledContent("Version", value: versionLabel)
                 Text("A small solo puzzle by MacKinnonTech.").foregroundStyle(.secondary)
             }
             Section("Your privacy") {
-                Text("Your puzzles and settings stay on this device. LumaLilt has no accounts, ads, analytics, or network requests. Sharing only happens when you choose Share and select a destination.")
+                if let privacyURL = URL(string: "https://github.com/m4ckDev/LumaLilt/blob/main/docs/PRIVACY.md") {
+                    Link("Privacy Policy", destination: privacyURL)
+                }
+                Text("Your puzzles and settings stay on this device. LumaLilt has no accounts, ads, or analytics. Gameplay works offline. Sharing and opening the privacy policy only happen when you choose.")
                     .font(.subheadline)
                 Text("Device backups may include saved progress according to your Apple backup settings.")
                     .font(.footnote).foregroundStyle(.secondary)
