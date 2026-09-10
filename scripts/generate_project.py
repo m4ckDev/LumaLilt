@@ -62,7 +62,7 @@ test_phases = [phase("testsrc", "PBXSourcesBuildPhase", [test_build]),
 base = {"CLANG_ENABLE_MODULES": "YES", "CLANG_ENABLE_OBJC_ARC": "YES", "SWIFT_VERSION": "5.0",
         "IPHONEOS_DEPLOYMENT_TARGET": "16.0", "SDKROOT": "iphoneos", "CODE_SIGN_STYLE": "Automatic",
         "TARGETED_DEVICE_FAMILY": "1,2", "SUPPORTED_PLATFORMS": "iphoneos iphonesimulator",
-        "CURRENT_PROJECT_VERSION": "2", "MARKETING_VERSION": "1.0", "ENABLE_USER_SCRIPT_SANDBOXING": "YES"}
+        "CURRENT_PROJECT_VERSION": "3", "MARKETING_VERSION": "1.0", "ENABLE_USER_SCRIPT_SANDBOXING": "YES"}
 project_configs = configs("project", base)
 app_configs = configs("app", {
     "PRODUCT_BUNDLE_IDENTIFIER": "com.mackinnontech.LumaLilt", "PRODUCT_NAME": "$(TARGET_NAME)",

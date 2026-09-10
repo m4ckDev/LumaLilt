@@ -7,9 +7,13 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Validate project metadata
+        run: python3 scripts/check_project.py
       - name: Test puzzle engine
         run: swift test
       - name: Build iOS app without signing
         run: xcodebuild -project LumaLilt.xcodeproj -scheme LumaLilt -destination 'generic/platform=iOS Simulator' -derivedDataPath build build CODE_SIGNING_ALLOWED=NO
       - name: Build native app tests
         run: xcodebuild -project LumaLilt.xcodeproj -scheme LumaLilt -destination 'generic/platform=iOS Simulator' -derivedDataPath build build-for-testing CODE_SIGNING_ALLOWED=NO
+      - name: Run native tests on an available iPhone simulator
+        run: bash scripts/validate_mac.sh
