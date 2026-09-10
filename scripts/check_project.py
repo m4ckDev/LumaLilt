@@ -31,9 +31,10 @@ assert png[25] == 2, 'Icon must be RGB, without alpha'
 privacy = plistlib.loads((root / 'LumaLilt/Resources/PrivacyInfo.xcprivacy').read_bytes())
 assert privacy['NSPrivacyTracking'] is False
 assert privacy['NSPrivacyAccessedAPITypes'][0]['NSPrivacyAccessedAPITypeReasons'] == ['CA92.1']
-assert len(re.findall(r'func test\w+\(', (root / 'Tests/PuzzleTests.swift').read_text())) == 8
+test_count = len(re.findall(r'func test\w+\(', (root / 'Tests/PuzzleTests.swift').read_text()))
+assert test_count >= 12, 'Expected original tests plus build 3 regression tests'
 for source in sources:
     text = source.read_text()
     assert not re.search(r'\b(URLSession|WKWebView|import Firebase|fatalError)\b', text), source
-print(f'PASS: {len(sources)} Swift source references, {len(ids)} project objects, shared scheme, 8 declared tests, asset catalog, RGB 1024 icon, privacy manifest.')
+print(f'PASS: {len(sources)} Swift source references, {len(ids)} project objects, shared scheme, {test_count} declared tests, asset catalog, RGB 1024 icon, privacy manifest.')
 print('Swift compilation, XCTest execution, and simulator/device UI checks require Xcode and were not performed by this script.')

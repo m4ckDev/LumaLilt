@@ -103,6 +103,30 @@ struct Puzzle: Codable, Equatable, Identifiable {
         if route.last == move.inverse { route.removeLast() } else { route.append(move) }
     }
 
+    /// A destination chooses a cyclic shift, never an arbitrary tile swap.
+    /// Keep each single-position shift in the existing move/undo history.
+    static func shifts(from source: Int, to destination: Int, size: Int) -> [Move] {
+        guard size >= 2, (0..<(size * size)).contains(source),
+              (0..<(size * size)).contains(destination), source != destination else { return [] }
+        let axis: Axis
+        let index: Int
+        let distance: Int
+        if source / size == destination / size {
+            axis = .row
+            index = source / size
+            distance = destination % size - source % size
+        } else if source % size == destination % size {
+            axis = .column
+            index = source % size
+            distance = destination / size - source / size
+        } else { return [] }
+        let forward = (distance + size) % size
+        let backward = size - forward
+        let direction = forward <= backward ? 1 : -1
+        return Array(repeating: Move(axis: axis, index: index, direction: direction),
+                     count: min(forward, backward))
+    }
+
     /// Retraces a known valid route. It guarantees progress along that route, not an optimal solution.
     mutating func hint() {
         guard !solved, let move = route.last else { return }

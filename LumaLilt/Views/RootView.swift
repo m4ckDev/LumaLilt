@@ -31,6 +31,7 @@ struct HomeView: View {
     @State private var confirmNew = false
     @State private var showHelp = false
     @AppStorage("palette") private var palette = "Tide"
+    @AppStorage("showMoveCount") private var showMoveCount = false
 
     var body: some View {
         ScrollView {
@@ -65,9 +66,13 @@ struct HomeView: View {
                         Text("A shared puzzle, played your way. Refreshes at midnight UTC.")
                             .font(.subheadline).foregroundStyle(.secondary)
                         NavigationLink { GameView(daily: true) } label: {
-                            HStack {
+                            ZStack {
                                 Text(store.progress.daily?.solved == true ? "View today's puzzle" : "Play today's puzzle")
-                                Spacer(); Image(systemName: "arrow.up.right")
+                                    .padding(.horizontal, 28).frame(maxWidth: .infinity)
+                                HStack {
+                                    Spacer()
+                                    Image(systemName: "arrow.up.right").accessibilityHidden(true)
+                                }
                             }
                         }.buttonStyle(PrimaryButton())
                     }
@@ -82,7 +87,7 @@ struct HomeView: View {
                         else { start() }
                     }.buttonStyle(PrimaryButton())
                     if let free = store.progress.free, !free.solved {
-                        Button("Continue \(free.difficulty.title.lowercased()) · \(free.moves) moves") { showFree = true }
+                        Button("Continue \(free.difficulty.title.lowercased())" + (showMoveCount ? " · \(free.moves) moves" : "")) { showFree = true }
                             .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 10)
                     }
                     Text("No clock. No pressure. Just one more shift.")
@@ -112,9 +117,11 @@ struct HelpView: View {
                     Image(systemName: "square.grid.3x3.fill").font(.system(size: 48)).foregroundStyle(Theme.mint)
                     Text("Bring the colors home.").font(.largeTitle.bold())
                     instruction("1", "Choose a tile", "Tap any tile to select its row and column.")
-                    instruction("2", "Give it a shift", "Use the arrows to slide the selected row left or right, or column up or down. Tiles wrap around the edges. You can also swipe from a tile.")
+                    instruction("2", "Choose where it goes", "In Tap to move mode, tap a tile, then a destination in the same row or column. The whole line shifts by the shortest wraparound route, not just that tile. Tap the selected tile again to cancel. In Arrows & swipe mode, tap any tile to select it, then use the labeled arrows or swipe in either direction.")
                     instruction("3", "Restore the pattern", "Match the preview. Numbers run left to right, top to bottom, starting at 1.")
                     Text("Undo is always there while you play. A hint makes one move along a known path back to the solution; it may undo one of your moves. Using hints marks that puzzle as assisted.")
+                        .foregroundStyle(.secondary)
+                    Text("There is no move limit or score penalty. The optional move counter records each one-position shift, including shifts made by a destination tap. Undo restores the previous count. Stronger colors and number labels are available in Settings.")
                         .foregroundStyle(.secondary)
                     Button("Let's play") { dismiss() }.buttonStyle(PrimaryButton())
                 }.padding(28).frame(maxWidth: 560).frame(maxWidth: .infinity)

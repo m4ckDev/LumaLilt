@@ -13,6 +13,14 @@ Slide whole rows and columns to restore a color gradient. Tiles wrap around the 
 Numbers show each tile's destination in reading order, so color perception is not required.
 Tap a tile, then use the arrows, or swipe directly from a tile.
 
+**Build 3:** tap a tile, then a destination in the same row or column to shift the
+whole line by the shortest wraparound route. Labeled arrows and swipes remain
+available. Stronger colors and readable number badges improve tile recognition;
+the move counter is optional and hidden by default.
+
+For the safe Mac update, test scripts, physical-device checklist, archive/upload,
+and replacing the previous App Store build, see [Build 3 handoff](docs/BUILD_3_HANDOFF.md).
+
 - Daily Lilt: a deterministic 4×4 puzzle, refreshed at midnight UTC.
 - Free play: Gentle 3×3, Flowing 4×4, and Deep 5×5 boards.
 - Every scramble comes from valid moves and has a known solution.
@@ -60,10 +68,12 @@ LumaLilt/
   Core/Progress.swift          Completion history and deduplication
   Views/                      Play, game, collection, settings, shared styling
   Resources/                  App icon, accent asset, privacy manifest
-Tests/PuzzleTests.swift        Eight game and persistence test cases
+Tests/PuzzleTests.swift        Game, palette and persistence regression tests
 Package.swift                 Standalone core tests, no third-party packages
 scripts/generate_project.py    Rebuild project metadata using Python 3
 scripts/check_project.py       Dependency-free project and resource validation
+scripts/validate_mac.sh        Quiet core + native simulator test workflow
+scripts/archive_mac.sh         Archive using existing Xcode signing settings
 docs/                         Release copy, privacy text, QA and handoff
 .github/workflows/apple.yml    macOS CI: tests and iOS simulator build
 ```

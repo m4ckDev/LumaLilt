@@ -6,6 +6,77 @@ import XCTest
 #endif
 
 final class PuzzleTests: XCTestCase {
+    func testDestinationTapUsesShortestLegalShiftForEveryBoardSize() {
+        for size in 3...5 {
+            for source in 0..<(size * size) {
+                for destination in 0..<(size * size) {
+                    let shifts = Puzzle.shifts(from: source, to: destination, size: size)
+                    let aligned = source != destination && (source / size == destination / size || source % size == destination % size)
+                    XCTAssertEqual(!shifts.isEmpty, aligned)
+                    guard aligned else { continue }
+                    XCTAssertLessThanOrEqual(shifts.count, size / 2)
+                    var board = Array(0..<(size * size))
+                    for move in shifts { Puzzle.rotate(&board, size: size, move: move) }
+                    XCTAssertEqual(board[destination], source)
+                    XCTAssertEqual(board.sorted(), Array(0..<(size * size)))
+                    for move in shifts.reversed() { Puzzle.rotate(&board, size: size, move: move.inverse) }
+                    XCTAssertEqual(board, Array(0..<(size * size)))
+                }
+            }
+        }
+    }
+
+    func testDestinationTapRejectsInvalidInputAndWrapsBothWays() {
+        XCTAssertTrue(Puzzle.shifts(from: -1, to: 0, size: 3).isEmpty)
+        XCTAssertTrue(Puzzle.shifts(from: 0, to: 9, size: 3).isEmpty)
+        XCTAssertTrue(Puzzle.shifts(from: 0, to: 0, size: 0).isEmpty)
+        XCTAssertEqual(Puzzle.shifts(from: 0, to: 4, size: 5), [Move(axis: .row, index: 0, direction: -1)])
+        XCTAssertEqual(Puzzle.shifts(from: 4, to: 0, size: 5), [Move(axis: .row, index: 0, direction: 1)])
+        XCTAssertEqual(Puzzle.shifts(from: 0, to: 20, size: 5), [Move(axis: .column, index: 0, direction: -1)])
+        XCTAssertEqual(Puzzle.shifts(from: 20, to: 0, size: 5), [Move(axis: .column, index: 0, direction: 1)])
+    }
+
+    func testDestinationTapPreservesMoveCountingUndoAndHintRoute() throws {
+        var puzzle = Puzzle(difficulty: .deep, seed: 19)
+        let original = puzzle
+        let shifts = Puzzle.shifts(from: 0, to: 2, size: 5)
+        for move in shifts { puzzle.play(move) }
+        XCTAssertEqual(puzzle.moves, 2)
+        XCTAssertTrue(puzzle.isValid)
+        let restored = try JSONDecoder().decode(Puzzle.self, from: JSONEncoder().encode(puzzle))
+        XCTAssertEqual(restored, puzzle)
+        for _ in shifts { puzzle.undo() }
+        XCTAssertEqual(puzzle, original)
+        for move in shifts { puzzle.play(move) }
+        for _ in 0..<puzzle.route.count { puzzle.hint() }
+        XCTAssertTrue(puzzle.solved)
+        XCTAssertTrue(puzzle.isValid)
+    }
+
+    func testEnhancedPalettesIncreaseAdjacentColorSeparation() {
+        func distance(_ a: TileAppearance, _ b: TileAppearance) -> Double {
+            abs(a.red - b.red) + abs(a.green - b.green) + abs(a.blue - b.blue)
+        }
+        for size in 3...5 {
+            for palette in ["Tide", "Dusk", "Ember"] {
+                for value in 0..<(size * size) {
+                    let enhanced = TileAppearance.color(value, size: size, palette: palette, enhanced: true)
+                    let original = TileAppearance.color(value, size: size, palette: palette, enhanced: false)
+                    for channel in [enhanced.red, enhanced.green, enhanced.blue] {
+                        XCTAssertTrue((0...1).contains(channel))
+                    }
+                    var neighbors: [Int] = []
+                    if value % size < size - 1 { neighbors.append(value + 1) }
+                    if value / size < size - 1 { neighbors.append(value + size) }
+                    for neighbor in neighbors {
+                        XCTAssertGreaterThan(distance(enhanced, TileAppearance.color(neighbor, size: size, palette: palette, enhanced: true)),
+                                             distance(original, TileAppearance.color(neighbor, size: size, palette: palette, enhanced: false)))
+                    }
+                }
+            }
+        }
+    }
+
     func testRowWrapAndInverse() {
         var board = Array(0..<9)
         let right = Move(axis: .row, index: 1, direction: 1)
