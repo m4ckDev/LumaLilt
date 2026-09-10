@@ -1,6 +1,7 @@
 import SwiftUI
 import UIKit
 
+/// Tile identity follows the tile value so swaps animate between positions.
 struct TileGrid: View {
     let board: [Int]
     let size: Int
@@ -8,54 +9,51 @@ struct TileGrid: View {
     let numbers: Bool
     @AppStorage("enhancedColors") private var enhancedColors = true
     var selected: Int? = nil
-    var tapToMove = false
     var select: ((Int) -> Void)? = nil
-    var shift: ((Int, CGSize) -> Void)? = nil
 
     var body: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: size), spacing: 6) {
-            ForEach(board.indices, id: \.self) { index in
-                Button { select?(index) } label: {
-                    RoundedRectangle(cornerRadius: size == 5 ? 10 : 14)
-                        .fill(Theme.tile(board[index], size: size, palette: palette, enhanced: enhancedColors))
-                        .aspectRatio(1, contentMode: .fit)
-                        .overlay {
-                            if numbers {
-                                Text("\(board[index] + 1)").font(.system(.body, design: .rounded, weight: .bold))
-                                    .minimumScaleFactor(0.6).foregroundStyle(.white)
-                                    .padding(5).background(Theme.ink, in: RoundedRectangle(cornerRadius: 7))
+        GeometryReader { geometry in
+            let side = max(1, (geometry.size.width - CGFloat(size - 1) * 6) / CGFloat(size))
+            ZStack(alignment: .topLeading) {
+                ForEach(board, id: \.self) { value in
+                    let index = board.firstIndex(of: value) ?? 0
+                    Button { select?(index) } label: {
+                        RoundedRectangle(cornerRadius: size == 5 ? 10 : 14)
+                            .fill(Theme.tile(value, size: size, palette: palette, enhanced: enhancedColors))
+                            .overlay {
+                                if numbers {
+                                    Text("\(value + 1)")
+                                        .font(.system(.body, design: .rounded, weight: .bold))
+                                        .minimumScaleFactor(0.6).lineLimit(1).foregroundStyle(.white)
+                                        .padding(5).background(Theme.ink, in: RoundedRectangle(cornerRadius: 7))
+                                }
                             }
-                        }
-                        .overlay {
-                            if selected == index {
-                                RoundedRectangle(cornerRadius: size == 5 ? 10 : 14)
-                                    .strokeBorder(.white, lineWidth: 3).padding(3)
-                                    .background {
-                                        RoundedRectangle(cornerRadius: size == 5 ? 10 : 14)
-                                            .strokeBorder(Theme.ink, lineWidth: 3)
-                                    }
-                            } else if isDestination(index) {
-                                RoundedRectangle(cornerRadius: size == 5 ? 10 : 14)
-                                    .strokeBorder(Theme.ink, style: StrokeStyle(lineWidth: 2, dash: [4]))
-                                    .padding(2)
+                            .overlay {
+                                if selected == index {
+                                    RoundedRectangle(cornerRadius: size == 5 ? 10 : 14)
+                                        .strokeBorder(Theme.ink, lineWidth: 5)
+                                        .overlay {
+                                            RoundedRectangle(cornerRadius: size == 5 ? 10 : 14)
+                                                .strokeBorder(.white, lineWidth: 3).padding(3)
+                                        }
+                                }
                             }
-                        }
+                    }
+                    .buttonStyle(.plain)
+                    .frame(width: side, height: side)
+                    .offset(x: CGFloat(index % size) * (side + 6), y: CGFloat(index / size) * (side + 6))
+                    .zIndex(selected == index ? 1 : 0)
+                    .accessibilityIdentifier("tile-\(index)")
+                    .accessibilityLabel("Tile \(value + 1), row \(index / size + 1), column \(index % size + 1)")
+                    .accessibilityValue(String(value + 1))
+                    .accessibilityHint(selected == index ? "Deselects this tile" : selected == nil
+                        ? "Selects this tile" : "Swaps this tile with the selected tile; all other tiles stay in place")
+                    .accessibilityAddTraits(selected == index ? .isSelected : [])
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Tile \(board[index] + 1), row \(index / size + 1), column \(index % size + 1)")
-                .accessibilityHint(select == nil ? "" : isDestination(index)
-                    ? "Moves the selected tile here by shifting its whole row or column"
-                    : selected == index && tapToMove ? "Deselects this tile" : "Selects this tile for movement")
-                .accessibilityAddTraits(selected == index ? .isSelected : [])
-                .simultaneousGesture(DragGesture(minimumDistance: 24).onEnded { value in shift?(index, value.translation) })
-                .allowsHitTesting(select != nil)
-            }
+            }.frame(width: geometry.size.width, height: geometry.size.width, alignment: .topLeading)
         }
-    }
-
-    private func isDestination(_ index: Int) -> Bool {
-        guard tapToMove, let selected else { return false }
-        return !Puzzle.shifts(from: selected, to: index, size: size).isEmpty
+        .aspectRatio(1, contentMode: .fit)
+        .allowsHitTesting(select != nil)
     }
 }
 
@@ -66,155 +64,154 @@ struct GameView: View {
     @AppStorage("palette") private var palette = "Tide"
     @AppStorage("numbers") private var numbers = true
     @AppStorage("haptics") private var haptics = true
-    @AppStorage("tapToMove") private var tapToMove = true
     @AppStorage("showMoveCount") private var showMoveCount = false
     @State private var selected: Int? = nil
     @State private var restart = false
     @State private var showHelp = false
+    @State private var showTarget = false
+    @State private var hintMessage: String? = nil
 
     var body: some View {
         ScrollView {
             if let puzzle = store.puzzle(daily: daily) {
-                VStack(spacing: 22) {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 5) {
-                            Text(daily ? "DAILY LILT" : puzzle.difficulty.title.uppercased())
-                                .font(.caption.weight(.bold)).tracking(2).foregroundStyle(Theme.mint)
-                            Text(puzzle.solved ? "Everything in its place." : "Find your flow.").font(.title2.bold())
-                        }
-                        Spacer()
-                        if showMoveCount {
-                            VStack(alignment: .trailing) {
-                                Text("\(puzzle.moves)").font(.title.monospacedDigit().bold())
-                                Text("moves").font(.caption).foregroundStyle(.secondary)
-                            }
-                        }
-                    }
+                VStack(spacing: 16) {
                     if !puzzle.solved {
-                        Picker("Movement controls", selection: $tapToMove) {
-                            Text("Tap to move").tag(true)
-                            Text("Arrows & swipe").tag(false)
-                        }.pickerStyle(.segmented)
-                        Text(tapToMove
-                             ? "Tap a tile, then a destination in its row or column. The whole line moves."
-                             : "Tap a tile, then use Left, Right, Up or Down. You can also swipe a tile.")
-                            .font(.subheadline).foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Text(selected.map { "Tile \(puzzle.board[$0] + 1) selected. Tap any other tile to swap." }
+                             ?? "Tap a tile, then another. Only those two tiles move.")
+                            .font(.subheadline).frame(maxWidth: .infinity, alignment: .leading)
+                            .accessibilityIdentifier("swap-instructions")
                     }
                     TileGrid(board: puzzle.board, size: puzzle.size, palette: palette, numbers: numbers,
-                             selected: puzzle.solved ? nil : selected,
-                             tapToMove: tapToMove,
-                             select: { choose($0, puzzle: puzzle) }, shift: { index, translation in
-                        selected = index
-                        let horizontal = abs(translation.width) > abs(translation.height)
-                        let direction = (horizontal ? translation.width : translation.height) > 0 ? 1 : -1
-                        play(Move(axis: horizontal ? .row : .column,
-                                  index: horizontal ? index / puzzle.size : index % puzzle.size, direction: direction))
-                    })
-                    .disabled(puzzle.solved)
-                    .padding(10).background(Theme.panel, in: RoundedRectangle(cornerRadius: 24))
+                             selected: puzzle.solved ? nil : selected, select: { choose($0, puzzle: puzzle) })
+                        .disabled(puzzle.solved)
+                        .padding(8).background(Theme.panel, in: RoundedRectangle(cornerRadius: 24))
+                    HStack {
+                        Text("\(puzzle.matched) of \(puzzle.size * puzzle.size) tiles home")
+                            .accessibilityIdentifier("matched-count")
+                            .accessibilityValue(String(puzzle.matched))
+                        Spacer()
+                        if showMoveCount { Text("\(puzzle.moves) moves").monospacedDigit() }
+                    }.font(.subheadline).foregroundStyle(.secondary)
 
                     if puzzle.solved {
                         completion(puzzle)
                     } else {
-                        Text("\(puzzle.matched) of \(puzzle.size * puzzle.size) tiles home")
-                            .font(.subheadline).foregroundStyle(.secondary)
-                        VStack(spacing: 10) {
-                            Text(selected.map { "Row \($0 / puzzle.size + 1) · Column \($0 % puzzle.size + 1)" } ?? "Select a tile to enable the arrows")
-                                .font(.caption).foregroundStyle(.secondary)
-                            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                                arrow("arrow.left", title: "Left", label: "Shift selected row left", axis: .row, direction: -1, size: puzzle.size)
-                                arrow("arrow.right", title: "Right", label: "Shift selected row right", axis: .row, direction: 1, size: puzzle.size)
-                                arrow("arrow.up", title: "Up", label: "Shift selected column up", axis: .column, direction: -1, size: puzzle.size)
-                                arrow("arrow.down", title: "Down", label: "Shift selected column down", axis: .column, direction: 1, size: puzzle.size)
-                            }
-                            if selected != nil {
-                                Button("Choose another tile") { selected = nil }.font(.caption)
-                            }
-                        }
-                        HStack(spacing: 24) {
-                            Button { change { $0.undo() } } label: { Label("Undo", systemImage: "arrow.uturn.backward") }
-                                .disabled(puzzle.undoStack.isEmpty)
-                            Button { change { $0.hint() } } label: { Label("Hint", systemImage: "lightbulb") }
+                        HStack(spacing: 12) {
+                            Button { selected = nil; hintMessage = nil; change { $0.undo() } } label: {
+                                Label("Undo", systemImage: "arrow.uturn.backward")
+                            }.disabled(puzzle.undoStack.isEmpty).accessibilityIdentifier("undo-move")
+                            Spacer(minLength: 0)
+                            Button { useHint(puzzle) } label: { Label("Hint", systemImage: "lightbulb") }
+                                .accessibilityIdentifier("apply-hint")
+                            Spacer(minLength: 0)
                             Button { restart = true } label: { Label("Reset", systemImage: "arrow.counterclockwise") }
-                        }.font(.subheadline).buttonStyle(.borderless).padding(.vertical, 10)
-                    }
-                    Panel {
-                        HStack(spacing: 22) {
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text("Your destination").font(.headline)
-                                Text("Match this pattern. Numbers go from 1 to \(puzzle.size * puzzle.size), left to right, top to bottom.")
-                                    .font(.caption).foregroundStyle(.secondary)
-                                TileGrid(board: Array(0..<(puzzle.size * puzzle.size)), size: puzzle.size, palette: palette, numbers: numbers)
-                                    .frame(maxWidth: 300).frame(maxWidth: .infinity).accessibilityHidden(true)
-                            }
+                        }.font(.subheadline).buttonStyle(.borderless).frame(minHeight: 44)
+                        if selected != nil {
+                            Button("Cancel selection") { selected = nil }.frame(minHeight: 44)
+                        }
+                        if let hintMessage {
+                            Text(hintMessage).font(.subheadline).foregroundStyle(Theme.mint)
+                                .accessibilityIdentifier("hint-explanation")
                         }
                     }
-                    if puzzle.hints > 0 {
-                        Text("\(puzzle.hints) hints used · Assisted puzzle").font(.caption).foregroundStyle(.secondary)
-                    }
-                }.padding(22).frame(maxWidth: 510).frame(maxWidth: .infinity)
+                }.padding(16).frame(maxWidth: 510).frame(maxWidth: .infinity)
             }
         }
         .background(Theme.ink)
+        .safeAreaInset(edge: .top, spacing: 0) {
+            if let puzzle = store.puzzle(daily: daily) { targetBar(puzzle) }
+        }
         .navigationTitle(daily ? "Today's puzzle" : "Free play")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar { Button { showHelp = true } label: { Image(systemName: "questionmark.circle") }.accessibilityLabel("How to play") }
+        .toolbar {
+            Button { showHelp = true } label: { Image(systemName: "questionmark.circle") }
+                .accessibilityLabel("How to play")
+        }
         .sheet(isPresented: $showHelp) { HelpView() }
+        .sheet(isPresented: $showTarget) {
+            if let puzzle = store.puzzle(daily: daily) {
+                NavigationStack {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 20) {
+                            Text("Numbers run left to right, top to bottom.").font(.headline)
+                            TileGrid(board: Array(0..<(puzzle.size * puzzle.size)), size: puzzle.size,
+                                     palette: palette, numbers: numbers).accessibilityHidden(true)
+                        }.padding(22).frame(maxWidth: 510).frame(maxWidth: .infinity)
+                    }.background(Theme.ink).navigationTitle("Your destination")
+                        .toolbar { Button("Done") { showTarget = false } }
+                }
+            }
+        }
         .confirmationDialog("Start this puzzle over?", isPresented: $restart, titleVisibility: .visible) {
-            Button("Restart puzzle", role: .destructive) { change { $0.restart() } }
+            Button("Restart puzzle", role: .destructive) {
+                selected = nil; hintMessage = nil; change { $0.restart() }
+            }
         }
     }
 
-    private func arrow(_ symbol: String, title: String, label: String, axis: Axis, direction: Int, size: Int) -> some View {
-        Button {
-            guard let selected else { return }
-            play(Move(axis: axis, index: axis == .row ? selected / size : selected % size, direction: direction))
-        } label: {
-            Label(title, systemImage: symbol).font(.headline).frame(maxWidth: .infinity).frame(minHeight: 52)
-                .background(Theme.panel, in: RoundedRectangle(cornerRadius: 16))
-        }.accessibilityLabel(label).disabled(selected == nil)
+    // This stays visible as the play area scrolls, including on compact iPhones.
+    private func targetBar(_ puzzle: Puzzle) -> some View {
+        Button { showTarget = true } label: {
+            HStack(spacing: 14) {
+                TileGrid(board: Array(0..<(puzzle.size * puzzle.size)), size: puzzle.size,
+                         palette: palette, numbers: false)
+                    .frame(width: 78, height: 78).accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Your destination").font(.headline)
+                    Text("1–\(puzzle.size * puzzle.size), left to right").font(.subheadline)
+                    Text("Tap to enlarge").font(.caption).foregroundStyle(Theme.mint)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "arrow.up.left.and.arrow.down.right").accessibilityHidden(true)
+            }.padding(.horizontal, 16).padding(.vertical, 10)
+                .frame(maxWidth: 510).frame(maxWidth: .infinity)
+                .background(Theme.panel)
+        }.buttonStyle(.plain).accessibilityIdentifier("target-preview")
+            .accessibilityLabel("View target pattern. Numbers 1 through \(puzzle.size * puzzle.size), left to right, top to bottom.")
     }
 
     private func choose(_ index: Int, puzzle: Puzzle) {
-        guard tapToMove, let source = selected else { selected = index; return }
-        if source == index { selected = nil; return }
-        let shifts = Puzzle.shifts(from: source, to: index, size: puzzle.size)
-        guard !shifts.isEmpty else { selected = index; return }
-        change { puzzle in
-            for move in shifts { puzzle.play(move) }
-        }
+        guard let source = selected else { selected = index; hintMessage = nil; return }
         selected = nil
+        guard source != index else { return }
+        hintMessage = nil
+        change { $0.swap(source, index) }
         feedback()
     }
 
-    private func play(_ move: Move) {
-        change { $0.play(move) }
+    private func useHint(_ puzzle: Puzzle) {
+        guard let suggestion = puzzle.suggestedSwap else { return }
+        selected = nil
+        change { _ = $0.hint() }
+        hintMessage = "Placed tile \(suggestion.destination + 1) home. Tiles already home stayed in place."
         feedback()
     }
 
     private func feedback() {
         if haptics {
-            if store.puzzle(daily: daily)?.solved == true { UINotificationFeedbackGenerator().notificationOccurred(.success) }
-            else { UIImpactFeedbackGenerator(style: .soft).impactOccurred() }
+            if store.puzzle(daily: daily)?.solved == true {
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+            } else { UIImpactFeedbackGenerator(style: .soft).impactOccurred() }
         }
     }
 
     private func change(_ action: (inout Puzzle) -> Void) {
-        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.18)) { store.update(daily: daily, action) }
+        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) { store.update(daily: daily, action) }
     }
 
     private func completion(_ puzzle: Puzzle) -> some View {
         VStack(spacing: 12) {
             Image(systemName: "sparkles").font(.largeTitle).foregroundStyle(Theme.mint)
-            Text("Nicely restored.").font(.title.bold())
-            Text((showMoveCount ? "\(puzzle.moves) moves · " : "") + (puzzle.hints == 0 ? "Unassisted" : "With a little help"))
+            Text("Nicely restored.").font(.title.bold()).accessibilityIdentifier("puzzle-complete")
+            Text((showMoveCount ? "\(puzzle.moves) moves · " : "") + (puzzle.hints == 0 ? "At your own pace" : "With a little help"))
                 .foregroundStyle(.secondary)
-            ShareLink(item: "I restored \(daily ? "the daily LumaLilt \(String(puzzle.id.dropFirst(6)))" : "a \(puzzle.size)×\(puzzle.size) LumaLilt puzzle")\(showMoveCount ? " in \(puzzle.moves) moves" : "")\(puzzle.hints > 0 ? " with hints" : " without hints"). A little shift. A quieter mind.") {
+            ShareLink(item: "I restored \(daily ? "the daily LumaLilt \(String(puzzle.id.dropFirst(6)))" : "a \(puzzle.size)×\(puzzle.size) LumaLilt puzzle")\(showMoveCount ? " in \(puzzle.moves) moves" : "")\(puzzle.hints > 0 ? " with hints" : " without hints"). A little color. A quieter mind.") {
                 Label("Share your moment", systemImage: "square.and.arrow.up")
             }.padding(10)
             if !daily {
-                Button("One more puzzle") { store.startFree(puzzle.difficulty); selected = nil }.buttonStyle(PrimaryButton())
+                Button("One more puzzle") {
+                    store.startFree(puzzle.difficulty); selected = nil; hintMessage = nil
+                }.buttonStyle(PrimaryButton())
             } else { Text("A fresh puzzle arrives at midnight UTC.").font(.footnote).foregroundStyle(.secondary) }
         }.frame(maxWidth: .infinity).padding(.vertical, 12)
     }

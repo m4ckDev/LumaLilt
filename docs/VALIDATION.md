@@ -1,57 +1,30 @@
-# Validation and first native run
+# Build 4 verification
 
-Generation environment: Linux, September 9, 2026. Swift and Xcode are not installed here.
+## Automated gates
 
-Checks performed:
+- Metadata checker: project references, shared scheme, three targets, RGB 1024 icon, privacy manifest.
+- Production Swift core: 13 tests, including 600 seeded puzzles, every possible swap pair on all
+  board sizes, hints that strictly improve correctness, undo, reset, save migration and malformed saves.
+- Native app compilation and native XCTest on an available iPhone simulator.
+- Three XCUITest flows: guided practice, diagonal swap + one Undo, hint preservation + target sheet.
+- CI uploads logs and xcresult bundles (including screenshots) for inspection.
 
-- Python project generator executes and produces deterministic metadata.
-- Every app Swift source is referenced by the Xcode project.
-- Project object references and shared scheme target references resolve.
-- App and hosted XCTest targets are present.
-- JSON asset catalogs and XML privacy manifest parse.
-- Included icon is an opaque RGB 1024×1024 PNG rendered from the repository's vector tile mark.
-- Eight Swift test cases are included and referenced by both the Xcode target and Swift package.
-- Source review of rotation, inverse route, deterministic UTC generation, undo, assistance tracking,
-  completion deduplication, and atomic save handling completed.
+The GitHub workflow result is the authority for whether these gates passed for a particular commit.
+No script claims human enjoyment or device performance based on functional test success.
 
-Not executed here:
+## Physical-device release checks
 
-- Swift compilation or the eight XCTest cases.
-- Xcode simulator build, physical-device run, or Mac Catalyst build.
-- Visual verification of the actual SwiftUI screens, VoiceOver, Dynamic Type, or gestures.
-- Signing, TestFlight, App Store name reservation, or publication.
+1. Update an existing TestFlight installation; confirm Settings shows the new build and saved progress remains.
+2. Complete or skip guided practice, then replay it through Help.
+3. Test 3×3, 4×4 and 5×5 boards. Swap horizontal, vertical and diagonal pairs; check all other positions stay put.
+4. Cancel selection by tapping the selected tile. One Undo must restore a complete swap and its move count.
+5. Use hints: every hint adds at least one correct tile and preserves previously correct positions.
+6. Solve a board; confirm completion, one history record, sharing and a fresh puzzle.
+7. Check the pinned target and expanded pattern on iPhone SE, iPad portrait/landscape and larger text sizes.
+8. Check all palettes, optional numbers, optional counter, haptics, VoiceOver and Reduce Motion.
+9. Check Reset, backgrounding, force-close/reopen, offline play and UTC daily rollover.
+10. Watch the swap animation on a device; assess whether it clearly shows two tiles travelling.
+11. Have a first-time player try a puzzle without coaching and note confusion, accidental actions and interest in another puzzle.
+12. Record the actual release build on a physical device for Apple's information request and update screenshots/listing text.
 
-These are meaningful outstanding checks. Do not interpret structural validation as a successful native build.
-
-## On your Mac
-
-1. Open `LumaLilt.xcodeproj`, select LumaLilt and an installed iPhone simulator.
-2. Command-U: all eight tests should pass. The solvability test checks 600 seeds across three sizes.
-3. Command-R: verify onboarding appears once and How to Play remains available afterward.
-4. Start every difficulty. Check row and column wraparound by swipe and by arrows.
-5. Make moves, undo, use a hint, undo it, restart. Verify the puzzle stays marked assisted.
-6. Finish a puzzle by repeated hints. Check the collection increments exactly once and controls lock.
-7. Start another board, make moves, background/terminate/reopen. Confirm board, moves, hints, and undo persist.
-8. Complete Daily Lilt, reopen it, and verify no duplicate completion is recorded.
-9. Change the simulator date past midnight UTC, background/foreground, and confirm a fresh daily board appears.
-10. Replace an unfinished free-play puzzle and verify a confirmation appears. Confirm daily progress is separate.
-11. Check every palette and the number toggle. Numbers must retain readable contrast.
-12. Enable VoiceOver. Select a tile and operate the four named arrow buttons. Check completion announcements
-    and revise accessibility if needed after testing. Test large accessibility text and Reduce Motion.
-13. Test a small iPhone, iPad portrait/landscape, and My Mac (Mac Catalyst), including narrow windows.
-14. Share a completed result and cancel the share sheet. Confirm no action happens without choosing a destination.
-15. Enable airplane mode and play all modes. Confirm no network access is needed.
-16. Reset all progress in Settings, cancel once, then confirm. Appearance preferences should remain.
-
-Suggested build command (no signing required):
-
-```bash
-xcodebuild -project LumaLilt.xcodeproj -scheme LumaLilt \
-  -destination 'generic/platform=iOS Simulator' build CODE_SIGNING_ALLOWED=NO
-```
-
-Standalone production-engine tests:
-
-```bash
-swift test
-```
+Mac Catalyst remains an optional target and needs its own native run before any Mac distribution claim.

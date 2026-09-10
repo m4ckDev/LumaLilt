@@ -34,8 +34,12 @@ struct SeededGenerator: RandomNumberGenerator {
 
 struct Turn: Codable, Equatable {
     let board: [Int]
-    let route: [Move]
     let moves: Int
+}
+
+struct TileSwap: Equatable {
+    let source: Int
+    let destination: Int
 }
 
 struct Puzzle: Codable, Equatable, Identifiable {
@@ -44,7 +48,7 @@ struct Puzzle: Codable, Equatable, Identifiable {
     let seed: UInt64
     let daily: Bool
     private(set) var board: [Int]
-    private(set) var route: [Move]
+    private(set) var startingBoard: [Int]
     private(set) var undoStack: [Turn] = []
     private(set) var moves = 0
     private(set) var hints = 0
@@ -57,8 +61,112 @@ struct Puzzle: Codable, Equatable, Identifiable {
         self.difficulty = difficulty
         self.seed = seed
         self.daily = daily
-        board = Array(0..<(difficulty.size * difficulty.size))
-        route = []
+        var generator = SeededGenerator(seed: seed)
+        var tiles = Array(0..<(difficulty.size * difficulty.size))
+        for index in stride(from: tiles.count - 1, through: 1, by: -1) {
+            tiles.swapAt(index, generator.number(index + 1))
+        }
+        if tiles == Array(0..<tiles.count) { tiles.swapAt(0, 1) }
+        board = tiles
+        startingBoard = tiles
+    }
+
+    /// Swap exactly two positions. One user action creates one undo entry.
+    mutating func swap(_ source: Int, _ destination: Int) {
+        guard !solved, source != destination,
+              board.indices.contains(source), board.indices.contains(destination) else { return }
+        remember()
+        board.swapAt(source, destination)
+        moves += 1
+    }
+
+    /// Place a misplaced tile home, without disturbing any tile already home.
+    /// Each hint strictly increases the number of correct positions.
+    var suggestedSwap: TileSwap? {
+        guard let destination = board.indices.first(where: { board[$0] != $0 }),
+              let source = board.firstIndex(of: destination) else { return nil }
+        return TileSwap(source: source, destination: destination)
+    }
+
+    @discardableResult
+    mutating func hint() -> TileSwap? {
+        guard let suggestion = suggestedSwap else { return nil }
+        swap(suggestion.source, suggestion.destination)
+        hints += 1
+        return suggestion
+    }
+
+    private mutating func remember() {
+        undoStack.append(Turn(board: board, moves: moves))
+        if undoStack.count > 100 { undoStack.removeFirst() }
+    }
+
+    mutating func undo() {
+        guard !solved, let turn = undoStack.popLast() else { return }
+        board = turn.board
+        moves = turn.moves
+        // Assistance remains recorded even when its move is undone.
+    }
+
+    mutating func restart() {
+        board = startingBoard
+        moves = 0
+        undoStack = []
+    }
+
+    var isValid: Bool {
+        let expected = Array(0..<(size * size))
+        return !id.isEmpty && moves >= 0 && hints >= 0 && undoStack.count <= 100 &&
+            board.sorted() == expected && startingBoard.sorted() == expected &&
+            undoStack.allSatisfy { $0.moves >= 0 && $0.moves <= moves && $0.board.sorted() == expected }
+    }
+
+    // Existing build 1–3 saves retain their exact boards, history, counters and IDs.
+    // Unknown legacy `route` fields are ignored. Original seeds reconstruct Reset.
+    private enum CodingKeys: String, CodingKey {
+        case id, difficulty, seed, daily, board, startingBoard, undoStack, moves, hints, rulesVersion
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let version = try container.decodeIfPresent(Int.self, forKey: .rulesVersion) ?? 1
+        guard version == 1 || version == 2 else {
+            throw DecodingError.dataCorruptedError(forKey: .rulesVersion, in: container,
+                                                   debugDescription: "Unsupported puzzle rules version")
+        }
+        id = try container.decode(String.self, forKey: .id)
+        difficulty = try container.decode(Difficulty.self, forKey: .difficulty)
+        seed = try container.decode(UInt64.self, forKey: .seed)
+        daily = try container.decode(Bool.self, forKey: .daily)
+        board = try container.decode([Int].self, forKey: .board)
+        undoStack = try container.decode([Turn].self, forKey: .undoStack)
+        moves = try container.decode(Int.self, forKey: .moves)
+        hints = try container.decode(Int.self, forKey: .hints)
+        if version == 1 { startingBoard = Self.legacyBoard(difficulty: difficulty, seed: seed) }
+        else { startingBoard = try container.decode([Int].self, forKey: .startingBoard) }
+        guard isValid else {
+            throw DecodingError.dataCorruptedError(forKey: .board, in: container,
+                                                   debugDescription: "Invalid puzzle save")
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(2, forKey: .rulesVersion)
+        try container.encode(id, forKey: .id)
+        try container.encode(difficulty, forKey: .difficulty)
+        try container.encode(seed, forKey: .seed)
+        try container.encode(daily, forKey: .daily)
+        try container.encode(board, forKey: .board)
+        try container.encode(startingBoard, forKey: .startingBoard)
+        try container.encode(undoStack, forKey: .undoStack)
+        try container.encode(moves, forKey: .moves)
+        try container.encode(hints, forKey: .hints)
+    }
+
+    private static func legacyBoard(difficulty: Difficulty, seed: UInt64) -> [Int] {
+        var result = Array(0..<(difficulty.size * difficulty.size))
+        var route: [Move] = []
         var generator = SeededGenerator(seed: seed)
         for _ in 0..<difficulty.scrambleCount {
             var move: Move
@@ -67,14 +175,13 @@ struct Puzzle: Codable, Equatable, Identifiable {
                             index: generator.number(difficulty.size),
                             direction: generator.number(2) == 0 ? -1 : 1)
             } while route.last == move.inverse
-            Self.rotate(&board, size: size, move: move)
+            rotate(&result, size: difficulty.size, move: move)
             route.append(move)
         }
-        if solved {
-            let move = Move(axis: .row, index: 0, direction: 1)
-            Self.rotate(&board, size: size, move: move)
-            route.append(move)
+        if result == Array(0..<result.count) {
+            rotate(&result, size: difficulty.size, move: Move(axis: .row, index: 0, direction: 1))
         }
+        return result
     }
 
     static func rotate(_ board: inout [Int], size: Int, move: Move) {
@@ -87,83 +194,6 @@ struct Puzzle: Codable, Equatable, Identifiable {
             } else {
                 board[destination * size + move.index] = old[position * size + move.index]
             }
-        }
-    }
-
-    private mutating func remember() {
-        undoStack.append(Turn(board: board, route: route, moves: moves))
-        if undoStack.count > 100 { undoStack.removeFirst() }
-    }
-
-    mutating func play(_ move: Move) {
-        guard !solved, move.isValid(size: size) else { return }
-        remember()
-        Self.rotate(&board, size: size, move: move)
-        moves += 1
-        if route.last == move.inverse { route.removeLast() } else { route.append(move) }
-    }
-
-    /// A destination chooses a cyclic shift, never an arbitrary tile swap.
-    /// Keep each single-position shift in the existing move/undo history.
-    static func shifts(from source: Int, to destination: Int, size: Int) -> [Move] {
-        guard size >= 2, (0..<(size * size)).contains(source),
-              (0..<(size * size)).contains(destination), source != destination else { return [] }
-        let axis: Axis
-        let index: Int
-        let distance: Int
-        if source / size == destination / size {
-            axis = .row
-            index = source / size
-            distance = destination % size - source % size
-        } else if source % size == destination % size {
-            axis = .column
-            index = source % size
-            distance = destination / size - source / size
-        } else { return [] }
-        let forward = (distance + size) % size
-        let backward = size - forward
-        let direction = forward <= backward ? 1 : -1
-        return Array(repeating: Move(axis: axis, index: index, direction: direction),
-                     count: min(forward, backward))
-    }
-
-    /// Retraces a known valid route. It guarantees progress along that route, not an optimal solution.
-    mutating func hint() {
-        guard !solved, let move = route.last else { return }
-        remember()
-        Self.rotate(&board, size: size, move: move.inverse)
-        route.removeLast()
-        moves += 1
-        hints += 1
-    }
-
-    mutating func undo() {
-        guard !solved, let turn = undoStack.popLast() else { return }
-        board = turn.board
-        route = turn.route
-        moves = turn.moves
-        // Assistance remains recorded even if the hinted move is undone.
-    }
-
-    mutating func restart() {
-        let usedHints = hints
-        self = Puzzle(id: id, difficulty: difficulty, seed: seed, daily: daily)
-        hints = usedHints
-    }
-
-    var isValid: Bool {
-        guard !id.isEmpty, moves >= 0, hints >= 0, undoStack.count <= 100,
-              board.sorted() == Array(0..<(size * size)),
-              route.allSatisfy({ $0.isValid(size: size) }) else { return false }
-        func reconstruct(_ path: [Move]) -> [Int] {
-            var result = Array(0..<(size * size))
-            for move in path { Self.rotate(&result, size: size, move: move) }
-            return result
-        }
-        guard reconstruct(route) == board else { return false }
-        return undoStack.allSatisfy {
-            $0.moves >= 0 && $0.moves <= moves &&
-            $0.route.allSatisfy { $0.isValid(size: size) } && reconstruct($0.route) == $0.board
         }
     }
 

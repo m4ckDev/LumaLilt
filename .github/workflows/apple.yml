@@ -17,3 +17,10 @@ jobs:
         run: xcodebuild -project LumaLilt.xcodeproj -scheme LumaLilt -destination 'generic/platform=iOS Simulator' -derivedDataPath build build-for-testing CODE_SIGNING_ALLOWED=NO
       - name: Run native tests on an available iPhone simulator
         run: bash scripts/validate_mac.sh
+      - name: Keep test logs and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lumalilt-native-test-results
+          path: build/validation
+          retention-days: 14

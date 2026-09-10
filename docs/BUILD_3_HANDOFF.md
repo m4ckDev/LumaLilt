@@ -1,3 +1,5 @@
+> Historical build 3 instructions. For the current tile-swap release, use [Build 4 handoff](BUILD_4_HANDOFF.md).
+
 # LumaLilt build 3: physical-device feedback
 
 Version 1.0, build 3. Keep the existing App Store Connect app and bundle ID

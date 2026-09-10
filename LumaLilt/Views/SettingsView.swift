@@ -6,14 +6,13 @@ struct SettingsView: View {
     @AppStorage("numbers") private var numbers = true
     @AppStorage("haptics") private var haptics = true
     @AppStorage("enhancedColors") private var enhancedColors = true
-    @AppStorage("tapToMove") private var tapToMove = true
     @AppStorage("showMoveCount") private var showMoveCount = false
     @State private var confirmReset = false
     @State private var help = false
 
     private var versionLabel: String {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
-        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "3"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "4"
         return "\(version) (\(build))"
     }
 
@@ -25,14 +24,13 @@ struct SettingsView: View {
                 }
                 Toggle("Show tile numbers", isOn: $numbers)
                 Toggle("Stronger color separation", isOn: $enhancedColors)
-                Toggle("Tap a destination to move", isOn: $tapToMove)
                 Toggle("Show move count", isOn: $showMoveCount)
                 Toggle("Gentle haptics", isOn: $haptics)
             }
             Section {
-                Text("Number labels identify each tile without relying on color. Stronger colors increase the gradient range. VoiceOver can select tiles and use the labeled arrow controls. Animations follow your device's Reduce Motion setting.")
+                Text("Number labels identify each tile without relying on color. Stronger colors increase the gradient range. VoiceOver can select two tiles to swap them. Animations follow your device's Reduce Motion setting.")
                     .font(.footnote).foregroundStyle(.secondary)
-                Text("No move limit or score penalty. Move counts are optional and record each one-position row or column shift. Undo restores the previous count.")
+                Text("No move limit or score penalty. One swap is one move, and one Undo reverses it. Hints place a tile home without disturbing tiles already home. Move counts are optional.")
                     .font(.footnote).foregroundStyle(.secondary)
             }
             Section("About LumaLilt") {

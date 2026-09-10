@@ -1,62 +1,53 @@
-# App Store working copy
+# App Store copy for build 4
 
 Name: LumaLilt
 
-Subtitle: Calm colors. Clever shifts.
+Subtitle: Calm colors. Simple swaps.
 
-Proposed US price: $1.99, one-time paid download. Choose the available price point in App Store Connect.
+Keywords:
+color,puzzle,relaxing,gradient,sorting,tiles,offline,solo,brain,daily,calm
 
-Promotional text:
+## Promotional text
 
-Take a small break with a satisfying color puzzle. Shift rows, restore the pattern, and find your flow, one tile at a time.
+Take a quiet break with colorful puzzles. Swap two tiles, restore each gradient, and enjoy a fresh Daily Lilt. Play offline, with no ads or subscriptions.
 
-Description:
+## Description
 
-A little shift. A quieter mind.
+A little color. A quieter mind.
 
-LumaLilt is a solo puzzle you can enjoy for a few spare minutes or a longer, unhurried break.
-Slide rows and columns until the colors fall into place. Each move wraps around the board,
-turning a simple idea into a thoughtful little challenge.
+LumaLilt is a solo color puzzle for small breaks. Tap one tile, then another to swap their places. Everything else stays put, so you can build the pattern one pair at a time.
 
-Make it your daily ritual with the Daily Lilt, or explore fresh puzzles across three board sizes.
-There is no timer and no pressure to keep a streak alive. Use undo whenever you need it,
-or take a hint to find a path home.
+Restore each gradient at your own pace:
 
-• Three difficulties: Gentle, Flowing, and Deep
-• A new shared daily puzzle at midnight UTC
-• Fresh free-play boards whenever you want
-• Three soft color palettes
-• Optional number labels, VoiceOver controls, and reduced-motion support
-• Saved progress and a collection of completed moments
-• Offline play with no account, advertising, or subscriptions
+• Choose Gentle 3×3, Flowing 4×4 or Deep 5×5 puzzles.
+• Return for a fresh Daily Lilt, refreshed at midnight UTC.
+• Learn with a short interactive practice puzzle.
+• Keep the target in view, or tap to enlarge it.
+• Undo your last swap or use a hint that preserves tiles already in place.
+• Choose three palettes, stronger colors and optional number labels.
+• Enjoy gentle haptics and support for Reduce Motion.
+• Save progress on your device and revisit completed moments.
 
-One small puzzle. Your own pace.
+No timer. No move penalties. No accounts, ads or subscriptions. Gameplay works offline.
 
-Keywords draft: puzzle,color,relax,solo,offline,gradient,tiles,brain,logic,calm,daily
+Numbers identify each tile's destination, so you can play without relying on color alone. Arrange them left to right, top to bottom to restore the pattern.
 
-Review notes draft:
+## Review notes: app facts to accompany the requested recording
 
-No login, remote service, or special account is required. On first launch, dismiss the How to Play
-sheet. Choose a free-play difficulty or Daily Lilt. Tap a tile and use the row/column arrows, or swipe
-from a tile. Restore numerical reading order to complete the board. Hint performs one valid move
-along a stored solution path. All content and game generation are included in the binary.
+Purpose and audience: LumaLilt is an offline solo color-arranging puzzle for people who enjoy short, self-paced logic puzzles. It provides a timer-free activity with optional number labels and hints.
 
-Submission work remaining:
+Access: No registration, login or credentials are required. Complete or skip the guided practice, then choose a free-play difficulty or Daily Lilt. Tap two tiles to swap them; all other tiles remain in place. Numbers follow reading order. Undo reverses one swap while playing; Hint puts a misplaced tile home without disturbing correct tiles. The pinned target opens a larger preview when tapped.
 
-- Reserve/verify name and bundle identifier in your Apple Developer account.
-- Build and run every item in VALIDATION.md on a simulator and physical phone.
-- Verify iPad layout and the Mac Catalyst target before distributing those versions.
-- Capture actual screenshots from the built app. Do not present design renders as device screenshots.
-- Publish the privacy policy and a real support page, then enter those URLs in App Store Connect.
-- Complete Apple's current age-rating questionnaire based on this binary. The content is designed
-  for general audiences; Apple determines the resulting rating. Do not claim Kids Category compliance.
-- Confirm privacy answers match the final binary, including any later third-party SDK additions.
-- Configure pricing, agreements, banking/tax details, signing, archive, and TestFlight review.
+Services: Native SwiftUI, Foundation, local JSON storage, UserDefaults and system haptics/share sheet. No developer backend, authentication service, AI service, advertising or analytics SDK is used for gameplay. The privacy link opens GitHub in the browser. System sharing occurs only when requested by the user.
 
-Name check on September 9, 2026: exact web searches did not surface LumaLilt, but this is not an
-App Store name reservation or legal clearance. The originally considered name Huefold was rejected
-because existing listings already use it:
-https://apps.apple.com/us/app/hexa-sort-puzzle-huefold/id6757859307
+Regional behavior: The same gameplay and content rules apply across regions. Daily Lilt refreshes at midnight UTC. No location-based feature restrictions are implemented.
 
-Apple privacy manifest reference:
-https://developer.apple.com/documentation/bundleresources/privacy-manifest-files
+Accounts, content and payments: No app accounts, public content sharing network, in-app purchases or subscriptions. The app uses an upfront App Store purchase. Puzzle results can be shared using the optional system share sheet.
+
+Regulated/protected content: This is a puzzle game, not a regulated service. Confirm ownership or licenses for all submitted artwork and other materials before making a rights declaration.
+
+Add your physical-device model, installed OS, exact tested build, actual test results and attached recording reference here. Do not claim a physical test based on CI results. Reply with all six points requested by App Review and also save them in App Review Information → Notes.
+
+Support URL: https://www.mackinnontech.com/#contact
+
+Privacy Policy URL: https://github.com/m4ckDev/LumaLilt/blob/main/docs/PRIVACY.md
