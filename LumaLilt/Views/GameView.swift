@@ -1,7 +1,8 @@
 import SwiftUI
 import UIKit
 
-/// Tile identity follows the tile value so swaps animate between positions.
+/// Tile identity follows its value so swaps animate between positions.
+/// Static previews use shapes, never nested interactive buttons.
 struct TileGrid: View {
     let board: [Int]
     let size: Int
@@ -17,43 +18,48 @@ struct TileGrid: View {
             ZStack(alignment: .topLeading) {
                 ForEach(board, id: \.self) { value in
                     let index = board.firstIndex(of: value) ?? 0
-                    Button { select?(index) } label: {
-                        RoundedRectangle(cornerRadius: size == 5 ? 10 : 14)
-                            .fill(Theme.tile(value, size: size, palette: palette, enhanced: enhancedColors))
-                            .overlay {
-                                if numbers {
-                                    Text("\(value + 1)")
-                                        .font(.system(.body, design: .rounded, weight: .bold))
-                                        .minimumScaleFactor(0.6).lineLimit(1).foregroundStyle(.white)
-                                        .padding(5).background(Theme.ink, in: RoundedRectangle(cornerRadius: 7))
-                                }
-                            }
-                            .overlay {
-                                if selected == index {
-                                    RoundedRectangle(cornerRadius: size == 5 ? 10 : 14)
-                                        .strokeBorder(Theme.ink, lineWidth: 5)
-                                        .overlay {
-                                            RoundedRectangle(cornerRadius: size == 5 ? 10 : 14)
-                                                .strokeBorder(.white, lineWidth: 3).padding(3)
-                                        }
-                                }
-                            }
+                    Group {
+                        if let select {
+                            Button { select(index) } label: { tile(value, index: index) }
+                                .buttonStyle(.plain)
+                                .accessibilityIdentifier("tile-\(index)")
+                                .accessibilityLabel("Tile \(value + 1), row \(index / size + 1), column \(index % size + 1)")
+                                .accessibilityValue(String(value + 1))
+                                .accessibilityHint(selected == index ? "Deselects this tile" : selected == nil
+                                    ? "Selects this tile" : "Swaps this tile with the selected tile; all other tiles stay in place")
+                                .accessibilityAddTraits(selected == index ? .isSelected : [])
+                        } else { tile(value, index: index).accessibilityHidden(true) }
                     }
-                    .buttonStyle(.plain)
                     .frame(width: side, height: side)
                     .offset(x: CGFloat(index % size) * (side + 6), y: CGFloat(index / size) * (side + 6))
                     .zIndex(selected == index ? 1 : 0)
-                    .accessibilityIdentifier("tile-\(index)")
-                    .accessibilityLabel("Tile \(value + 1), row \(index / size + 1), column \(index % size + 1)")
-                    .accessibilityValue(String(value + 1))
-                    .accessibilityHint(selected == index ? "Deselects this tile" : selected == nil
-                        ? "Selects this tile" : "Swaps this tile with the selected tile; all other tiles stay in place")
-                    .accessibilityAddTraits(selected == index ? .isSelected : [])
                 }
             }.frame(width: geometry.size.width, height: geometry.size.width, alignment: .topLeading)
         }
         .aspectRatio(1, contentMode: .fit)
-        .allowsHitTesting(select != nil)
+    }
+
+    private func tile(_ value: Int, index: Int) -> some View {
+        RoundedRectangle(cornerRadius: size == 5 ? 10 : 14)
+            .fill(Theme.tile(value, size: size, palette: palette, enhanced: enhancedColors))
+            .overlay {
+                if numbers {
+                    Text("\(value + 1)")
+                        .font(.system(.body, design: .rounded, weight: .bold))
+                        .minimumScaleFactor(0.6).lineLimit(1).foregroundStyle(.white)
+                        .padding(5).background(Theme.ink, in: RoundedRectangle(cornerRadius: 7))
+                }
+            }
+            .overlay {
+                if selected == index {
+                    RoundedRectangle(cornerRadius: size == 5 ? 10 : 14)
+                        .strokeBorder(Theme.ink, lineWidth: 5)
+                        .overlay {
+                            RoundedRectangle(cornerRadius: size == 5 ? 10 : 14)
+                                .strokeBorder(.white, lineWidth: 3).padding(3)
+                        }
+                }
+            }
     }
 }
 
@@ -83,7 +89,7 @@ struct GameView: View {
                     }
                     TileGrid(board: puzzle.board, size: puzzle.size, palette: palette, numbers: numbers,
                              selected: puzzle.solved ? nil : selected, select: { choose($0, puzzle: puzzle) })
-                        .disabled(puzzle.solved)
+                        .allowsHitTesting(!puzzle.solved)
                         .padding(8).background(Theme.panel, in: RoundedRectangle(cornerRadius: 24))
                     HStack {
                         Text("\(puzzle.matched) of \(puzzle.size * puzzle.size) tiles home")
@@ -171,6 +177,7 @@ struct GameView: View {
     }
 
     private func choose(_ index: Int, puzzle: Puzzle) {
+        guard !puzzle.solved else { return }
         guard let source = selected else { selected = index; hintMessage = nil; return }
         selected = nil
         guard source != index else { return }

@@ -132,7 +132,7 @@ struct HelpView: View {
                     Text(instruction).font(.headline).accessibilityIdentifier("practice-instruction")
                     TileGrid(board: board, size: 3, palette: palette, numbers: true,
                              selected: selected, select: practice)
-                        .disabled(pairs == 2)
+                        .allowsHitTesting(pairs < 2)
                     Text("Arrange numbers left to right, top to bottom. In a real puzzle, you can swap any two tiles, even diagonally.")
                         .font(.subheadline).foregroundStyle(.secondary)
                     if pairs == 2 {
