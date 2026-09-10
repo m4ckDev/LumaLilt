@@ -47,8 +47,12 @@ test_group = add("testgroup", "PBXGroup", children=[test_file], path="Tests", so
 test_build = add("testbuild", "PBXBuildFile", fileRef=test_file)
 app_product = add("app-product", "PBXFileReference", explicitFileType="wrapper.application", includeInIndex="0", path="LumaLilt.app", sourceTree="BUILT_PRODUCTS_DIR")
 test_product = add("test-product", "PBXFileReference", explicitFileType="wrapper.cfbundle", includeInIndex="0", path="LumaLiltTests.xctest", sourceTree="BUILT_PRODUCTS_DIR")
-products = add("products", "PBXGroup", children=[app_product, test_product], name="Products", sourceTree="<group>")
-main = add("main", "PBXGroup", children=[source_group, test_group, products], sourceTree="<group>")
+ui_file = file("ui-testfile", "GameplayUITests.swift", "sourcecode.swift")
+ui_group = add("ui-testgroup", "PBXGroup", children=[ui_file], path="UITests", sourceTree="<group>")
+ui_build = add("ui-testbuild", "PBXBuildFile", fileRef=ui_file)
+ui_product = add("ui-product", "PBXFileReference", explicitFileType="wrapper.cfbundle", includeInIndex="0", path="LumaLiltUITests.xctest", sourceTree="BUILT_PRODUCTS_DIR")
+products = add("products", "PBXGroup", children=[app_product, test_product, ui_product], name="Products", sourceTree="<group>")
+main = add("main", "PBXGroup", children=[source_group, test_group, ui_group, products], sourceTree="<group>")
 
 def phase(name, isa, files):
     return add(name, isa, buildActionMask="2147483647", files=files, runOnlyForDeploymentPostprocessing="0")
@@ -62,7 +66,7 @@ test_phases = [phase("testsrc", "PBXSourcesBuildPhase", [test_build]),
 base = {"CLANG_ENABLE_MODULES": "YES", "CLANG_ENABLE_OBJC_ARC": "YES", "SWIFT_VERSION": "5.0",
         "IPHONEOS_DEPLOYMENT_TARGET": "16.0", "SDKROOT": "iphoneos", "CODE_SIGN_STYLE": "Automatic",
         "TARGETED_DEVICE_FAMILY": "1,2", "SUPPORTED_PLATFORMS": "iphoneos iphonesimulator",
-        "CURRENT_PROJECT_VERSION": "3", "MARKETING_VERSION": "1.0", "ENABLE_USER_SCRIPT_SANDBOXING": "YES"}
+        "CURRENT_PROJECT_VERSION": "4", "MARKETING_VERSION": "1.0", "ENABLE_USER_SCRIPT_SANDBOXING": "YES"}
 project_configs = configs("project", base)
 app_configs = configs("app", {
     "PRODUCT_BUNDLE_IDENTIFIER": "com.mackinnontech.LumaLilt", "PRODUCT_NAME": "$(TARGET_NAME)",
@@ -86,10 +90,19 @@ proxy = add("proxy", "PBXContainerItemProxy", containerPortal=uid("project"), pr
 dependency = add("dependency", "PBXTargetDependency", target=app, targetProxy=proxy)
 tests = add("test-target", "PBXNativeTarget", buildConfigurationList=test_configs, buildPhases=test_phases,
             buildRules=[], dependencies=[dependency], name="LumaLiltTests", productName="LumaLiltTests", productReference=test_product, productType="com.apple.product-type.bundle.unit-test")
+ui_configs = configs("ui-tests", {
+    "PRODUCT_BUNDLE_IDENTIFIER": "com.mackinnontech.LumaLiltUITests", "PRODUCT_NAME": "$(TARGET_NAME)",
+    "GENERATE_INFOPLIST_FILE": "YES", "TEST_TARGET_NAME": "LumaLilt",
+    "LD_RUNPATH_SEARCH_PATHS": "$(inherited) @executable_path/Frameworks @loader_path/Frameworks"})
+ui_tests = add("ui-test-target", "PBXNativeTarget", buildConfigurationList=ui_configs,
+    buildPhases=[phase("uisrc", "PBXSourcesBuildPhase", [ui_build]),
+                 phase("uiframework", "PBXFrameworksBuildPhase", []), phase("uires", "PBXResourcesBuildPhase", [])],
+    buildRules=[], dependencies=[dependency], name="LumaLiltUITests", productName="LumaLiltUITests",
+    productReference=ui_product, productType="com.apple.product-type.bundle.ui-testing")
 project = add("project", "PBXProject", attributes={"BuildIndependentTargetsInParallel": "YES", "LastUpgradeCheck": "1600",
               "TargetAttributes": {app: {"CreatedOnToolsVersion": "16.0"}, tests: {"CreatedOnToolsVersion": "16.0", "TestTargetID": app}}},
               buildConfigurationList=project_configs, compatibilityVersion="Xcode 14.0", developmentRegion="en", hasScannedForEncodings="0",
-              knownRegions=["en", "Base"], mainGroup=main, productRefGroup=products, projectDirPath="", projectRoot="", targets=[app, tests])
+              knownRegions=["en", "Base"], mainGroup=main, productRefGroup=products, projectDirPath="", projectRoot="", targets=[app, tests, ui_tests])
 
 def encode(value, depth=0):
     tab = "\t" * depth
@@ -106,12 +119,13 @@ scheme_dir = project_dir / "xcshareddata/xcschemes"
 scheme_dir.mkdir(parents=True, exist_ok=True)
 app_ref = f'<BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="{app}" BuildableName="LumaLilt.app" BlueprintName="LumaLilt" ReferencedContainer="container:LumaLilt.xcodeproj"/>'
 test_ref = f'<BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="{tests}" BuildableName="LumaLiltTests.xctest" BlueprintName="LumaLiltTests" ReferencedContainer="container:LumaLilt.xcodeproj"/>'
+ui_ref = f'<BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="{ui_tests}" BuildableName="LumaLiltUITests.xctest" BlueprintName="LumaLiltUITests" ReferencedContainer="container:LumaLilt.xcodeproj"/>'
 (scheme_dir / "LumaLilt.xcscheme").write_text(f'''<?xml version="1.0" encoding="UTF-8"?>
 <Scheme LastUpgradeVersion="1600" version="1.3">
   <BuildAction parallelizeBuildables="YES" buildImplicitDependencies="YES"><BuildActionEntries>
     <BuildActionEntry buildForTesting="YES" buildForRunning="YES" buildForProfiling="YES" buildForArchiving="YES" buildForAnalyzing="YES">{app_ref}</BuildActionEntry>
   </BuildActionEntries></BuildAction>
-  <TestAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.IDEFoundation.Launcher.LLDB" shouldUseLaunchSchemeArgsEnv="YES"><Testables><TestableReference skipped="NO">{test_ref}</TestableReference></Testables></TestAction>
+  <TestAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.IDEFoundation.Launcher.LLDB" shouldUseLaunchSchemeArgsEnv="YES"><Testables><TestableReference skipped="NO">{test_ref}</TestableReference><TestableReference skipped="NO">{ui_ref}</TestableReference></Testables></TestAction>
   <LaunchAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.IDEFoundation.Launcher.LLDB" launchStyle="0" useCustomWorkingDirectory="NO" ignoresPersistentStateOnLaunch="NO" debugServiceExtension="internal" allowLocationSimulation="YES"><BuildableProductRunnable runnableDebuggingMode="0">{app_ref}</BuildableProductRunnable></LaunchAction>
   <ProfileAction buildConfiguration="Release" shouldUseLaunchSchemeArgsEnv="YES" savedToolIdentifier="" useCustomWorkingDirectory="NO" debugServiceExtension="internal"><BuildableProductRunnable runnableDebuggingMode="0">{app_ref}</BuildableProductRunnable></ProfileAction>
   <AnalyzeAction buildConfiguration="Debug"/>

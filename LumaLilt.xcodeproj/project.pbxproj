@@ -176,11 +176,37 @@
 			"path" = "LumaLiltTests.xctest";
 			"sourceTree" = "BUILT_PRODUCTS_DIR";
 		};
+		"F5AAA54FC8DBBDA311930C37" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "GameplayUITests.swift";
+			"sourceTree" = "<group>";
+		};
+		"ACDEE234B477E476F161B28D" = {
+			"isa" = "PBXGroup";
+			"children" = (
+				"F5AAA54FC8DBBDA311930C37",
+			);
+			"path" = "UITests";
+			"sourceTree" = "<group>";
+		};
+		"5EEBCA3A418C3EFA5178EB4C" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "F5AAA54FC8DBBDA311930C37";
+		};
+		"93E46A602338E07A8524AEF6" = {
+			"isa" = "PBXFileReference";
+			"explicitFileType" = "wrapper.cfbundle";
+			"includeInIndex" = "0";
+			"path" = "LumaLiltUITests.xctest";
+			"sourceTree" = "BUILT_PRODUCTS_DIR";
+		};
 		"0A3E27B8CA818264D75C8D81" = {
 			"isa" = "PBXGroup";
 			"children" = (
 				"681C948D238C526E9E3424E0",
 				"F739566ED5280322FF98A798",
+				"93E46A602338E07A8524AEF6",
 			);
 			"name" = "Products";
 			"sourceTree" = "<group>";
@@ -190,6 +216,7 @@
 			"children" = (
 				"878A52FC5FF6A57D50B7B870",
 				"781CAA6738A604344AE86EE3",
+				"ACDEE234B477E476F161B28D",
 				"0A3E27B8CA818264D75C8D81",
 			);
 			"sourceTree" = "<group>";
@@ -261,7 +288,7 @@
 				"CODE_SIGN_STYLE" = "Automatic";
 				"TARGETED_DEVICE_FAMILY" = "1,2";
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
-				"CURRENT_PROJECT_VERSION" = "3";
+				"CURRENT_PROJECT_VERSION" = "4";
 				"MARKETING_VERSION" = "1.0";
 				"ENABLE_USER_SCRIPT_SANDBOXING" = "YES";
 				"SWIFT_OPTIMIZATION_LEVEL" = "-Onone";
@@ -282,7 +309,7 @@
 				"CODE_SIGN_STYLE" = "Automatic";
 				"TARGETED_DEVICE_FAMILY" = "1,2";
 				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
-				"CURRENT_PROJECT_VERSION" = "3";
+				"CURRENT_PROJECT_VERSION" = "4";
 				"MARKETING_VERSION" = "1.0";
 				"ENABLE_USER_SCRIPT_SANDBOXING" = "YES";
 				"SWIFT_OPTIMIZATION_LEVEL" = "-O";
@@ -441,6 +468,83 @@
 			"productReference" = "F739566ED5280322FF98A798";
 			"productType" = "com.apple.product-type.bundle.unit-test";
 		};
+		"0DD3DE992460938D646D0955" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Debug";
+			"buildSettings" = {
+				"PRODUCT_BUNDLE_IDENTIFIER" = "com.mackinnontech.LumaLiltUITests";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"TEST_TARGET_NAME" = "LumaLilt";
+				"LD_RUNPATH_SEARCH_PATHS" = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				"SWIFT_OPTIMIZATION_LEVEL" = "-Onone";
+				"DEBUG_INFORMATION_FORMAT" = "dwarf";
+				"SWIFT_ACTIVE_COMPILATION_CONDITIONS" = "DEBUG $(inherited)";
+				"ENABLE_TESTABILITY" = "YES";
+			};
+		};
+		"7401BF29D392476B2A97D8D5" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Release";
+			"buildSettings" = {
+				"PRODUCT_BUNDLE_IDENTIFIER" = "com.mackinnontech.LumaLiltUITests";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"TEST_TARGET_NAME" = "LumaLilt";
+				"LD_RUNPATH_SEARCH_PATHS" = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				"SWIFT_OPTIMIZATION_LEVEL" = "-O";
+				"DEBUG_INFORMATION_FORMAT" = "dwarf-with-dsym";
+			};
+		};
+		"214585839C8B42C216D44279" = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = (
+				"0DD3DE992460938D646D0955",
+				"7401BF29D392476B2A97D8D5",
+			);
+			"defaultConfigurationIsVisible" = "0";
+			"defaultConfigurationName" = "Release";
+		};
+		"B8DA836572759ACF367214FE" = {
+			"isa" = "PBXSourcesBuildPhase";
+			"buildActionMask" = "2147483647";
+			"files" = (
+				"5EEBCA3A418C3EFA5178EB4C",
+			);
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
+		"2EA6BF2DD62C5D03035644AD" = {
+			"isa" = "PBXFrameworksBuildPhase";
+			"buildActionMask" = "2147483647";
+			"files" = (
+			);
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
+		"8C4D85C610FB9C3A07B11BC5" = {
+			"isa" = "PBXResourcesBuildPhase";
+			"buildActionMask" = "2147483647";
+			"files" = (
+			);
+			"runOnlyForDeploymentPostprocessing" = "0";
+		};
+		"C972F427C0D501B6444DFE03" = {
+			"isa" = "PBXNativeTarget";
+			"buildConfigurationList" = "214585839C8B42C216D44279";
+			"buildPhases" = (
+				"B8DA836572759ACF367214FE",
+				"2EA6BF2DD62C5D03035644AD",
+				"8C4D85C610FB9C3A07B11BC5",
+			);
+			"buildRules" = (
+			);
+			"dependencies" = (
+				"F26350DAFE3F19AABFD69AC4",
+			);
+			"name" = "LumaLiltUITests";
+			"productName" = "LumaLiltUITests";
+			"productReference" = "93E46A602338E07A8524AEF6";
+			"productType" = "com.apple.product-type.bundle.ui-testing";
+		};
 		"244210E48437B6556980A702" = {
 			"isa" = "PBXProject";
 			"attributes" = {
@@ -471,6 +575,7 @@
 			"targets" = (
 				"C1E9827DB735CA9BAA54A540",
 				"9805CBD60EB4F66728D5D195",
+				"C972F427C0D501B6444DFE03",
 			);
 		};
 	};

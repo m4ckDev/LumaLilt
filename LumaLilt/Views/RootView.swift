@@ -2,7 +2,7 @@ import SwiftUI
 
 struct RootView: View {
     @EnvironmentObject private var store: AppStore
-    @AppStorage("onboarded") private var onboarded = false
+    @AppStorage("swapTutorialCompleted") private var onboarded = false
     @State private var showHelp = false
 
     var body: some View {
@@ -44,7 +44,7 @@ struct HomeView: View {
                         .accessibilityLabel("How to play")
                 }
                 VStack(alignment: .leading, spacing: 9) {
-                    Text("A little shift.\nA quieter mind.").font(.system(size: 38, weight: .semibold, design: .rounded))
+                    Text("A little color.\nA quieter mind.").font(.system(size: 38, weight: .semibold, design: .rounded))
                     Text("Find the pattern. Enjoy the moment.").foregroundStyle(.secondary)
                 }
                 HStack {
@@ -90,7 +90,7 @@ struct HomeView: View {
                         Button("Continue \(free.difficulty.title.lowercased())" + (showMoveCount ? " · \(free.moves) moves" : "")) { showFree = true }
                             .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 10)
                     }
-                    Text("No clock. No pressure. Just one more shift.")
+                    Text("No clock. No pressure. One pair at a time.")
                         .font(.footnote).foregroundStyle(.secondary).frame(maxWidth: .infinity)
                 }
             }.padding(24).frame(maxWidth: 560)
@@ -110,28 +110,58 @@ struct HomeView: View {
 
 struct HelpView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @AppStorage("palette") private var palette = "Tide"
+    @State private var board = [1, 0, 2, 3, 4, 5, 6, 8, 7]
+    @State private var selected: Int? = nil
+    @State private var pairs = 0
+
+    private var first: Int { pairs == 0 ? 0 : 7 }
+    private var second: Int { pairs == 0 ? 1 : 8 }
+    private var instruction: String {
+        if pairs == 2 { return "You did it. Every other tile stayed put." }
+        if selected == nil { return pairs == 0 ? "Tap tile 2, then tile 1 to swap them." : "Now tap tile 9, then tile 8." }
+        return pairs == 0 ? "Now tap tile 1. Only this pair will move." : "Tap tile 8 to finish the pattern."
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 25) {
-                    Image(systemName: "square.grid.3x3.fill").font(.system(size: 48)).foregroundStyle(Theme.mint)
-                    Text("Bring the colors home.").font(.largeTitle.bold())
-                    instruction("1", "Choose a tile", "Tap any tile to select its row and column.")
-                    instruction("2", "Choose where it goes", "In Tap to move mode, tap a tile, then a destination in the same row or column. The whole line shifts by the shortest wraparound route, not just that tile. Tap the selected tile again to cancel. In Arrows & swipe mode, tap any tile to select it, then use the labeled arrows or swipe in either direction.")
-                    instruction("3", "Restore the pattern", "Match the preview. Numbers run left to right, top to bottom, starting at 1.")
-                    Text("Undo is always there while you play. A hint makes one move along a known path back to the solution; it may undo one of your moves. Using hints marks that puzzle as assisted.")
-                        .foregroundStyle(.secondary)
-                    Text("There is no move limit or score penalty. The optional move counter records each one-position shift, including shifts made by a destination tap. Undo restores the previous count. Stronger colors and number labels are available in Settings.")
-                        .foregroundStyle(.secondary)
-                    Button("Let's play") { dismiss() }.buttonStyle(PrimaryButton())
-                }.padding(28).frame(maxWidth: 560).frame(maxWidth: .infinity)
-            }.background(Theme.ink).navigationTitle("How to play").navigationBarTitleDisplayMode(.inline)
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Two tiles. One swap.").font(.title.bold())
+                    Text(instruction).font(.headline).accessibilityIdentifier("practice-instruction")
+                    TileGrid(board: board, size: 3, palette: palette, numbers: true,
+                             selected: selected, select: practice)
+                        .allowsHitTesting(pairs < 2)
+                    Text("Arrange numbers left to right, top to bottom. In a real puzzle, you can swap any two tiles, even diagonally.")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                    if pairs == 2 {
+                        Label("Practice complete", systemImage: "checkmark.circle.fill")
+                            .foregroundStyle(Theme.mint).accessibilityIdentifier("practice-complete")
+                        Button("Let's play") { dismiss() }.buttonStyle(PrimaryButton())
+                    }
+                    Text("Undo reverses one swap. Hint places a tile home without disturbing tiles already home. The target stays above your puzzle; tap it for a larger view.")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                    Text("No timer or move penalties. Number labels and stronger colors are on by default. You can change them in Settings.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }.padding(20).frame(maxWidth: 440).frame(maxWidth: .infinity)
+            }.background(Theme.ink).navigationTitle("Try a quick swap")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar { Button("Skip") { dismiss() }.accessibilityLabel("Skip practice").accessibilityIdentifier("skip-practice") }
         }
     }
-    private func instruction(_ number: String, _ title: String, _ detail: String) -> some View {
-        HStack(alignment: .top, spacing: 15) {
-            Text(number).font(.headline).foregroundStyle(Theme.mint).padding(12).background(Theme.panel, in: Circle())
-            VStack(alignment: .leading, spacing: 5) { Text(title).font(.headline); Text(detail).foregroundStyle(.secondary) }
+
+    private func practice(_ index: Int) {
+        guard pairs < 2 else { return }
+        if selected == nil {
+            if index == first { selected = index }
+        } else if index == first { selected = nil }
+        else if index == second {
+            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) {
+                board.swapAt(first, second)
+                selected = nil
+                pairs += 1
+            }
         }
     }
 }

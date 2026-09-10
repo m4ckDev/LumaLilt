@@ -43,10 +43,12 @@ if not devices:
 print(devices[0]["udid"])
 PY
 )
+lumalilt_result_dir=$(mktemp -d "$PWD/build/validation/run-XXXXXX")
 echo "Running native tests on simulator $lumalilt_simulator (Xcode may boot it)."
 run_check "Native app build and tests" build/validation/native.log \
     /usr/bin/xcrun xcodebuild -project LumaLilt.xcodeproj -scheme LumaLilt \
     -destination "platform=iOS Simulator,id=$lumalilt_simulator" \
-    -derivedDataPath build -parallel-testing-enabled NO test CODE_SIGNING_ALLOWED=NO
+    -derivedDataPath build -resultBundlePath "$lumalilt_result_dir/Tests.xcresult" \
+    -parallel-testing-enabled NO test CODE_SIGNING_ALLOWED=NO
 echo "Validation passed. Logs: $PWD/build/validation"
 echo "Next: open LumaLilt.xcodeproj and test on your physical iPhone and iPad."

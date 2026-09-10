@@ -15,7 +15,7 @@ assert refs == ids, f"Dangling references: {refs - ids}"
 sources = sorted((root / "LumaLilt").rglob("*.swift"))
 for source in sources:
     assert json.dumps(str(source.relative_to(root / "LumaLilt"))) in project, f"Missing source {source}"
-assert project.count('"isa" = "PBXNativeTarget"') == 2
+assert project.count('"isa" = "PBXNativeTarget"') == 3
 assert '"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon"' in project
 scheme = ET.parse(root / "LumaLilt.xcodeproj/xcshareddata/xcschemes/LumaLilt.xcscheme")
 for ref in scheme.findall('.//BuildableReference'):
@@ -32,7 +32,7 @@ privacy = plistlib.loads((root / 'LumaLilt/Resources/PrivacyInfo.xcprivacy').rea
 assert privacy['NSPrivacyTracking'] is False
 assert privacy['NSPrivacyAccessedAPITypes'][0]['NSPrivacyAccessedAPITypeReasons'] == ['CA92.1']
 test_count = len(re.findall(r'func test\w+\(', (root / 'Tests/PuzzleTests.swift').read_text()))
-assert test_count >= 12, 'Expected original tests plus build 3 regression tests'
+assert test_count >= 13, 'Expected swap, migration and palette regression tests'
 for source in sources:
     text = source.read_text()
     assert not re.search(r'\b(URLSession|WKWebView|import Firebase|fatalError)\b', text), source
