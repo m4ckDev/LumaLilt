@@ -147,7 +147,7 @@ struct HelpView: View {
                 }.padding(20).frame(maxWidth: 440).frame(maxWidth: .infinity)
             }.background(Theme.ink).navigationTitle("Try a quick swap")
                 .navigationBarTitleDisplayMode(.inline)
-                .toolbar { Button("Skip practice") { dismiss() }.accessibilityIdentifier("skip-practice") }
+                .toolbar { Button("Skip") { dismiss() }.accessibilityLabel("Skip practice").accessibilityIdentifier("skip-practice") }
         }
     }
 
