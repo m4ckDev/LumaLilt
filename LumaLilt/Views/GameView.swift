@@ -14,29 +14,60 @@ struct TileGrid: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let side = max(1, (geometry.size.width - CGFloat(size - 1) * 6) / CGFloat(size))
-            ZStack(alignment: .topLeading) {
-                ForEach(board, id: \.self) { value in
-                    let index = board.firstIndex(of: value) ?? 0
-                    Group {
-                        if let select {
-                            Button { select(index) } label: { tile(value, index: index) }
-                                .buttonStyle(.plain)
-                                .accessibilityIdentifier("tile-\(index)")
-                                .accessibilityLabel("Tile \(value + 1), row \(index / size + 1), column \(index % size + 1)")
-                                .accessibilityValue(String(value + 1))
-                                .accessibilityHint(selected == index ? "Deselects this tile" : selected == nil
-                                    ? "Selects this tile" : "Swaps this tile with the selected tile; all other tiles stay in place")
-                                .accessibilityAddTraits(selected == index ? .isSelected : [])
-                        } else { tile(value, index: index).accessibilityHidden(true) }
-                    }
-                    .frame(width: side, height: side)
-                    .offset(x: CGFloat(index % size) * (side + 6), y: CGFloat(index / size) * (side + 6))
-                    .zIndex(selected == index ? 1 : 0)
-                }
-            }.frame(width: geometry.size.width, height: geometry.size.width, alignment: .topLeading)
+            grid(width: geometry.size.width)
         }
         .aspectRatio(1, contentMode: .fit)
+    }
+
+    private func grid(width: CGFloat) -> some View {
+        let spacing: CGFloat = 6
+        let gaps: CGFloat = CGFloat(size - 1) * spacing
+        let side: CGFloat = max(1, (width - gaps) / CGFloat(size))
+        return ZStack(alignment: .topLeading) {
+            ForEach(board, id: \.self) { value in
+                positionedTile(value, side: side)
+            }
+        }
+        .frame(width: width, height: width, alignment: .topLeading)
+    }
+
+    private func positionedTile(_ value: Int, side: CGFloat) -> some View {
+        let index: Int = board.firstIndex(of: value) ?? 0
+        let step: CGFloat = side + 6
+        let x: CGFloat = CGFloat(index % size) * step
+        let y: CGFloat = CGFloat(index / size) * step
+        let depth: Double = selected == index ? 1 : 0
+        return tileContent(value, index: index)
+            .frame(width: side, height: side)
+            .offset(x: x, y: y)
+            .zIndex(depth)
+    }
+
+    @ViewBuilder
+    private func tileContent(_ value: Int, index: Int) -> some View {
+        if let select {
+            interactiveTile(value, index: index, action: select)
+        } else {
+            tile(value, index: index).accessibilityHidden(true)
+        }
+    }
+
+    private func interactiveTile(_ value: Int, index: Int, action: @escaping (Int) -> Void) -> some View {
+        let label: String = "Tile \(value + 1), row \(index / size + 1), column \(index % size + 1)"
+        let traits: AccessibilityTraits = selected == index ? .isSelected : []
+        return Button { action(index) } label: { tile(value, index: index) }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("tile-\(index)")
+            .accessibilityLabel(Text(label))
+            .accessibilityValue(Text(String(value + 1)))
+            .accessibilityHint(Text(selectionHint(index)))
+            .accessibilityAddTraits(traits)
+    }
+
+    private func selectionHint(_ index: Int) -> String {
+        if selected == index { return "Deselects this tile" }
+        if selected == nil { return "Selects this tile" }
+        return "Swaps this tile with the selected tile; all other tiles stay in place"
     }
 
     private func tile(_ value: Int, index: Int) -> some View {
